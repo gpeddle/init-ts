@@ -5,13 +5,11 @@ die () {
     exit 1
 }
 
-[ "$#" -eq 1 ] || die "1 argument required, $# provided"
+[ "$#" -eq 1 ] || die "1 argument required, $# provided. Exiting."
 
-JQ=`which j_q`
-[ -f $JQ ] || die "jq not found"
+command -v jq >/dev/null 2>&1 || die "jq required but not installed. Exiting."
 
 PROJECT=$1
-
 
 if test -d "$PROJECT"; then
     echo "$PROJECT already exists."
