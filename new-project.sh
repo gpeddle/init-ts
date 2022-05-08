@@ -33,7 +33,8 @@ echo dist >> .gitignore
 
 npm init -y
 npm install --save-dev typescript @types/node @types/express
-npx tsc --init
+npm install --save-dev ts-node nodemon
+npx tsc --init --rootDir src --outDir dist
 
 sed -ie '/\/\/.*/d' tsconfig.json 
 sed -ie  '/^\s*\/\*.*\*\/$/d' tsconfig.json
@@ -44,15 +45,8 @@ sed -ie  '/^$/d' tsconfig.json
 jq '. * {scripts: {build: "tsc --build"}}' package.json > jq.tmp && cp jq.tmp package.json 
 jq '. * {scripts: {clean: "tsc --build --clean"}}' package.json > jq.tmp && cp jq.tmp package.json 
 
-
-# TSC settings for src and dist // "outDir": "./", 
-jq '. + {include: ["src/**/*"]}' tsconfig.json > jq.tmp && cp jq.tmp tsconfig.json 
-jq '. * {compilerOptions: {outDir: "./dist"}}' tsconfig.json > jq.tmp && cp jq.tmp tsconfig.json 
-
-
 # starter script 
 echo 'console.log("Hello, world!");' > src/index.ts
-
 
 rm jq.tmp
 rm tsconfig.jsone
@@ -60,5 +54,3 @@ rm tsconfig.jsone
 git status
 git add .
 git commit -m 'empty project'
-
-
