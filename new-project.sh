@@ -23,32 +23,126 @@ DIR="./$PROJECT"
 mkdir "$DIR" 
 mkdir "$DIR/src" 
 mkdir "$DIR/dist" 
+mkdir "$DIR/docs" 
+mkdir "$DIR/.vscode" 
 cd "$DIR"
 
 git init --initial-branch=main .
-echo node_modules >> .gitignore
-echo dist >> .gitignore 
+
+cat > .gitignore <<- EOM
+node_modules
+dist
+EOM
 
 npm init -y
-npm install --save-dev typescript @types/node @types/express
-npm install --save-dev ts-node nodemon
-npx tsc --init --rootDir src --outDir dist
+npm install --save-dev typescript @types/node
+npm install --save-dev concurrently ts-node nodemon
+npm install dotenv tslog
 
-sed -ie '/\/\/.*/d' tsconfig.json 
-sed -ie  '/^\s*\/\*.*\*\/$/d' tsconfig.json
-sed -ie  's/\/\*.*\*\///g' tsconfig.json
-sed -ie  '/^$/d' tsconfig.json
+cat > tsconfig.json <<- EOM
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "rootDir": "src", 
+    "outDir": "dist",                                        
+    "forceConsistentCasingInFileNames": true,            
+    "strict": true,                                      
+    "skipLibCheck": true,  
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules", 
+    "**/*.test.ts"]
+}
+EOM
 
-# NPM scripts for build and clean
-jq '. * {scripts: {build: "tsc --build"}}' package.json > jq.tmp && cp jq.tmp package.json 
-jq '. * {scripts: {clean: "tsc --build --clean"}}' package.json > jq.tmp && cp jq.tmp package.json 
+# NPM package.json customization
+npm set-script build "tsc --build"
+npm set-script clean "tsc --build --clean"
+npm set-script debug "nodemon --inspect src/index.ts"
+
+# JQ needed here
+jq '. * {main: "dist/index.js"}' package.json > jq.tmp && cp jq.tmp package.json 
+
 
 # starter script 
-echo 'console.log("Hello, world!");' > src/index.ts
+cat > src/index.ts <<- EOM
+// example application
+import dotenv from 'dotenv';
+import { Logger } from "tslog";
 
+dotenv.config();
+
+const log: Logger = new Logger();
+
+log.info("Hello, $PROJECT");
+
+EOM
+
+# ESLint
+cat > .eslint <<- EOM
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "rules": { 
+        "no-console": 2
+    }
+}
+EOM
+
+# ESLint ignore
+cat > .eslintignore <<- EOM
+node_modules
+dist
+EOM
+
+# vscode settings
+cat > .vscode/settings.json <<- EOM
+{}
+EOM
+
+cat > .vscode/launch.json <<- EOM
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "name": "nodemon",
+            "program": "${workspaceFolder}/src/index.ts",
+            "request": "launch",
+            "restart": true,
+            "runtimeExecutable": "nodemon",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+    ]
+}
+EOM
+
+# cleanup
 rm jq.tmp
 rm tsconfig.jsone
 
 git status
 git add .
 git commit -m 'empty project'
+
+echo "Project '$PROJECT' created."
